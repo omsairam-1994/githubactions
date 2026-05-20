@@ -1,0 +1,56 @@
+name: Setup Jenkins on Runner
+
+on:
+  workflow_dispatch:
+
+jobs:
+  setup:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install latest Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Install Docker
+        run: |
+          sudo apt update
+          sudo apt install -y docker.io
+          sudo systemctl enable --now docker
+          sudo usermod -aG docker om
+          newgrp docker
+          docker --version
+
+      - name: Install Jenkins
+        run: |
+          sudo apt install -y openjdk-21-jdk wget gnupg
+          wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io.key | sudo apt-key add -
+          sudo sh -c 'echo deb https://pkg.jenkins.io/debian-stable binary/ > /etc/apt/sources.list.d/jenkins.list'
+          sudo apt update
+          sudo apt install -y jenkins
+          sudo systemctl enable --now jenkins
+          sudo systemctl status jenkins --no-pager
+
+      - name: Verify installations
+        run: |
+          java -version
+          docker --version
+          systemctl status jenkins --no-pager
+
+  install-kind:
+    runs-on: self-hosted
+    needs: setup   # depends on setup job
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install kind
+        run: |
+          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.23.0/kind-linux-amd64
+          chmod +x ./kind
+          sudo mv ./kind /usr/local/bin/kind
+          kind version
