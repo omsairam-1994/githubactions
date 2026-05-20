@@ -7,6 +7,9 @@ jobs:
   setup:
     runs-on: self-hosted
     steps:
+      - name: Check sudo
+        run: sudo -n whoami
+
       - name: Check user
         run: whoami
       - name: Checkout code
